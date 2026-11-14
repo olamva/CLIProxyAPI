@@ -1,0 +1,11 @@
+{
+  "id": "526dff78",
+  "ts": "2026-11-14T19:21:45+00:00",
+  "text": "view_file pre-tool hook rejects symlinked skill paths under ~/.gemini/antigravity-cli/skills that resolve to ~/.agents/skills",
+  "tags": [],
+  "who": "agent",
+  "model": "gemini-4-argon-medium",
+  "session": "",
+  "where": "/Users/olavassbotn/Developer/CLIProxyAPI-fork",
+  "branch": "patched"
+}

@@ -233,11 +233,38 @@ func (h *Handler) APICall(c *gin.Context) {
 		return
 	}
 
+	if resp.StatusCode == http.StatusOK && h.authManager != nil && auth != nil && parsedURL.Path == "/api/oauth/usage" && claudeUsageHasQuota(respBody) {
+		_, _, _ = h.authManager.ResetQuota(c.Request.Context(), auth.ID)
+	}
+
 	c.JSON(http.StatusOK, apiCallResponse{
 		StatusCode: resp.StatusCode,
 		Header:     resp.Header,
 		Body:       string(respBody),
 	})
+}
+
+func claudeUsageHasQuota(body []byte) bool {
+	var payload struct {
+		FiveHour *struct {
+			Utilization  float64 `json:"utilization"`
+			LockedReason *string `json:"locked_reason"`
+		} `json:"five_hour"`
+		SevenDay *struct {
+			Utilization  float64 `json:"utilization"`
+			LockedReason *string `json:"locked_reason"`
+		} `json:"seven_day"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil || payload.FiveHour == nil {
+		return false
+	}
+	if payload.FiveHour.Utilization >= 100 || (payload.FiveHour.LockedReason != nil && *payload.FiveHour.LockedReason != "") {
+		return false
+	}
+	if payload.SevenDay != nil && (payload.SevenDay.Utilization >= 100 || (payload.SevenDay.LockedReason != nil && *payload.SevenDay.LockedReason != "")) {
+		return false
+	}
+	return true
 }
 
 func firstNonEmptyString(values ...*string) string {

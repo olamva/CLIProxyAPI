@@ -1,0 +1,11 @@
+{
+  "id": "aa766e62",
+  "ts": "2026-11-14T13:09:15+00:00",
+  "text": "gh repo fork rejects --remote when a repo argument is given; error hidden by tail",
+  "tags": [],
+  "who": "agent",
+  "model": "claude-opus-5-5",
+  "session": "66add00c",
+  "where": "/Users/olavassbotn/Developer/CLIProxyAPI-fork",
+  "branch": "patched"
+}
