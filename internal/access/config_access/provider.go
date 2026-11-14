@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/auth/codex"
 	sdkaccess "github.com/router-for-me/CLIProxyAPI/v8/sdk/access"
 	sdkconfig "github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 )
@@ -110,7 +111,28 @@ func (p *provider) Authenticate(_ context.Context, r *http.Request) (*sdkaccess.
 		}, nil
 	}
 
+	if isCodexOAuthToken(apiKey) {
+		return &sdkaccess.Result{
+			Provider:  p.Identifier(),
+			Principal: "codex-oauth",
+			Metadata: map[string]string{
+				"source": "codex-oauth",
+			},
+		}, nil
+	}
+
 	return nil, sdkaccess.NewInvalidCredentialError()
+}
+
+func isCodexOAuthToken(token string) bool {
+	if !strings.HasPrefix(token, "eyJ") {
+		return false
+	}
+	claims, err := codex.ParseJWTToken(token)
+	if err != nil || claims == nil {
+		return false
+	}
+	return claims.GetAccountID() != "" || claims.CodexAuthInfo.UserID != "" || claims.Iss == "https://auth.openai.com"
 }
 
 func extractBearerToken(header string) string {
