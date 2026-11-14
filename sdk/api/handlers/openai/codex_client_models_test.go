@@ -374,17 +374,23 @@ func TestCodexClientModelsApplyPatchRouting(t *testing.T) {
 	for _, version := range []string{"", "0.137.0", "0.153.4", "cpa"} {
 		t.Run(version, func(t *testing.T) {
 			response := handler.codexClientModelsResponse(version)
-			for _, id := range []string{"gpt-5.5", "gpt-reserve", "catalog-patch-synthetic", "catalog-patch-alias", "catalog-patch-mixed"} {
+			for _, id := range []string{"gpt-5.5", "gpt-reserve", "catalog-patch-mixed"} {
 				assertPatch(t, response, id, "freeform")
 			}
-			for _, id := range []string{"gpt-image-2", "catalog-patch-partial", "catalog-patch-unknown", "team/gpt-5.5", "catalog-patch-disabled"} {
+			for _, id := range []string{"gpt-image-2", "catalog-patch-partial"} {
 				assertPatch(t, response, id, nil)
+			}
+			for _, entry := range response["models"].([]map[string]any) {
+				switch entry["slug"] {
+				case "catalog-patch-synthetic", "catalog-patch-alias", "catalog-patch-unknown", "team/gpt-5.5", "catalog-patch-disabled":
+					t.Errorf("non-codex model %q is listed", entry["slug"])
+				}
 			}
 		})
 	}
 	manager.RegisterExecutor(catalogUnknownExecutor{executor.NewCodexAutoExecutor(&config.Config{})})
 	assertPatch(t, handler.codexClientModelsResponse("0.153.4"), "gpt-5.5", nil)
 	withoutManager := NewOpenAIAPIHandler(handlers.NewBaseAPIHandlers(enabledCfg, nil))
-	assertPatch(t, withoutManager.codexClientModelsResponse("0.153.4"), "catalog-patch-synthetic", nil)
+	assertPatch(t, withoutManager.codexClientModelsResponse("0.153.4"), "catalog-patch-mixed", nil)
 
 }
