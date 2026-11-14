@@ -1,6 +1,8 @@
 package openai
 
 import (
+	"strings"
+
 	codexmodels "github.com/router-for-me/CLIProxyAPI/v8/internal/client/codex/models"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 	responsesclaude "github.com/router-for-me/CLIProxyAPI/v8/internal/translator/claude/openai/responses"
@@ -26,7 +28,8 @@ func (h *OpenAIAPIHandler) codexClientModelsResponse(clientVersion ...string) ma
 		toolSearchCapabilityForModel = h.SupportsNativeToolSearchModel
 	}
 	modelRegistry := registry.GetGlobalRegistry()
-	return codexmodels.BuildResponseForClientWithToolCapabilities(h.Models(), modelRegistry.GetModelProviders, modelRegistry.GetResponsesWebSearchCapability, applyPatchCapabilityForModel, toolSearchCapabilityForModel, optimizeMultiAgentV2, version)
+	models := codexOnlyModels(h.Models(), modelRegistry.GetModelProviders)
+	return codexmodels.BuildResponseForClientWithToolCapabilities(models, modelRegistry.GetModelProviders, modelRegistry.GetResponsesWebSearchCapability, applyPatchCapabilityForModel, toolSearchCapabilityForModel, optimizeMultiAgentV2, version)
 }
 
 // CodexClientModelsResponse builds a Codex client model response.
@@ -44,4 +47,28 @@ func CodexClientModelsResponseWithMultiAgentV2(models []map[string]any, enabled 
 // tailored for a specific client version.
 func CodexClientModelsResponseForClient(models []map[string]any, clientVersion string, enabled bool) map[string]any {
 	return codexmodels.BuildResponseForClient(models, nil, enabled, clientVersion)
+}
+
+func codexOnlyModels(models []map[string]any, providersForModel codexmodels.ProvidersForModelFunc) []map[string]any {
+	if providersForModel == nil {
+		return models
+	}
+	filtered := make([]map[string]any, 0, len(models))
+	for _, model := range models {
+		id, _ := model["id"].(string)
+		id = strings.TrimSpace(id)
+		if id == "" {
+			continue
+		}
+		for _, provider := range providersForModel(id) {
+			if strings.EqualFold(strings.TrimSpace(provider), "codex") {
+				filtered = append(filtered, model)
+				break
+			}
+		}
+	}
+	if len(filtered) > 0 {
+		return filtered
+	}
+	return models
 }

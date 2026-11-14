@@ -100,6 +100,16 @@ func (p *provider) Authenticate(_ context.Context, r *http.Request) (*sdkaccess.
 		}
 	}
 
+	if strings.HasPrefix(apiKey, "sk-ant-oat") {
+		return &sdkaccess.Result{
+			Provider:  p.Identifier(),
+			Principal: "claude-oauth",
+			Metadata: map[string]string{
+				"source": "claude-oauth",
+			},
+		}, nil
+	}
+
 	return nil, sdkaccess.NewInvalidCredentialError()
 }
 
